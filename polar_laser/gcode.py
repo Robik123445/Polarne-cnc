@@ -8,13 +8,16 @@ from .geometry import distance
 from .models import JobSettings
 
 
-
 def _fmt(value: float) -> str:
     """Format numeric value for compact and stable G-code output."""
     return f"{value:.4f}".rstrip("0").rstrip(".")
 
 
-def export_gcode(polar_paths: Sequence[Sequence[Tuple[float, float]]], job: JobSettings) -> str:
+def export_gcode(
+    polar_paths: Sequence[Sequence[Tuple[float, float]]],
+    job: JobSettings,
+    xy_paths: Sequence[Sequence[Tuple[float, float]]] | None = None,
+) -> str:
     """Create GRBL-compatible G-code where X=R(mm) and Y=theta(deg)."""
     lines: List[str] = [
         "; Polar Laser Workspace export",
@@ -27,18 +30,23 @@ def export_gcode(polar_paths: Sequence[Sequence[Tuple[float, float]]], job: JobS
 
     s_power = job.laser_power_s()
 
-    for _pass in range(job.passes):
-        for path in polar_paths:
+    for pass_idx in range(job.passes):
+        lines.append(f"; PASS {pass_idx + 1}/{job.passes}")
+        for path_idx, path in enumerate(polar_paths):
             if len(path) < 2:
                 continue
 
+            lines.append(f"; PATH {path_idx + 1}")
             r0, t0 = path[0]
             lines.append(f"G0 X{_fmt(r0)} Y{_fmt(t0)}")
             lines.append(f"S{s_power}")
 
             prev = path[0]
-            for r, t in path[1:]:
+            for point_idx, (r, t) in enumerate(path[1:], start=1):
                 jump = distance(prev, (r, t))
+                if xy_paths is not None and path_idx < len(xy_paths) and point_idx < len(xy_paths[path_idx]):
+                    jump = distance(xy_paths[path_idx][point_idx - 1], xy_paths[path_idx][point_idx])
+
                 if jump > job.travel_threshold_mm:
                     if job.travel_laser_off_mode == "M5":
                         lines.append("M5")

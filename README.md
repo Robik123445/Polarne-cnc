@@ -27,6 +27,7 @@ It already includes import, preview, kinematic conversion, validation, and expor
   - `XY -> (R, θ)` conversion
   - theta wrap modes (`neg180_180`, `0_360`)
   - shortest-path theta unwrap
+  - optimize path order (nearest-next start)
 - GRBL laser export:
   - header (`G21`, `G90`, `G94`, `M3/M4`, `S0`)
   - path motions (`G0`, `G1` with `F`, `S`)
@@ -56,8 +57,7 @@ pytest -q
 
 ## What is still missing for "full production CNC suite"
 - color/layer mapping -> per-path feed/power/passes
-- path ordering optimization (nearest-start)
-- machine streaming/sender (serial to GRBL + run monitor)
+- serial sender + run-state monitor
 - full CAM safety options (lead-in/out, corner power strategy, dwell policy)
 - richer UI tooling (dedicated rotate/scale gizmos, selection handles)
 - project file format (job + machine + import state)

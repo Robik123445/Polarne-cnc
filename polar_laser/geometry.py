@@ -60,7 +60,6 @@ def polyline_length(points: Sequence[Point]) -> float:
     return sum(distance(a, b) for a, b in zip(points, points[1:]))
 
 
-
 def bounding_box(points: Sequence[Point]) -> Tuple[float, float, float, float]:
     """Return min_x, max_x, min_y, max_y for provided points."""
     if not points:
@@ -68,6 +67,21 @@ def bounding_box(points: Sequence[Point]) -> Tuple[float, float, float, float]:
     xs = [p[0] for p in points]
     ys = [p[1] for p in points]
     return min(xs), max(xs), min(ys), max(ys)
+
+
+def sort_paths_nearest(paths: Sequence[Sequence[Point]]) -> List[List[Point]]:
+    """Reorder paths by nearest-next start point to reduce travel movement."""
+    remaining = [list(p) for p in paths if len(p) >= 2]
+    if not remaining:
+        return []
+
+    sorted_paths: List[List[Point]] = [remaining.pop(0)]
+    while remaining:
+        last_end = sorted_paths[-1][-1]
+        best_idx = min(range(len(remaining)), key=lambda i: distance(last_end, remaining[i][0]))
+        sorted_paths.append(remaining.pop(best_idx))
+    return sorted_paths
+
 
 def xy_to_polar(points: Iterable[Point], wrap: ThetaWrapMode, shortest_path: bool) -> List[Tuple[float, float]]:
     """Convert XY points to polar points (R mm, theta deg)."""

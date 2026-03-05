@@ -139,6 +139,7 @@ class MainWindow(QMainWindow):
         self.passes_spin = QSpinBox(); self.passes_spin.setRange(1, 20); self.passes_spin.setValue(self.job.passes)
         self.wrap_combo = QComboBox(); self.wrap_combo.addItems(["neg180_180", "0_360"])
         self.shortest_check = QCheckBox("Shortest path theta"); self.shortest_check.setChecked(True)
+        self.optimize_order_check = QCheckBox("Optimize path order"); self.optimize_order_check.setChecked(True)
         self.grid_check = QCheckBox("Show grid"); self.grid_check.setChecked(True)
         self.strict_check = QCheckBox("Strict limits"); self.strict_check.setChecked(True)
 
@@ -167,6 +168,7 @@ class MainWindow(QMainWindow):
         form.addRow("Flatten tol (mm)", self.flat_spin)
         form.addRow("Theta wrap", self.wrap_combo)
         form.addRow("", self.shortest_check)
+        form.addRow("", self.optimize_order_check)
         form.addRow("", self.grid_check)
         form.addRow("", self.strict_check)
         form.addRow("Import scale", self.scale_spin)
@@ -225,6 +227,7 @@ class MainWindow(QMainWindow):
         self.job.curve_flatten_tol_mm = self.flat_spin.value()
         self.job.theta_wrap_mode = self.wrap_combo.currentText()
         self.job.shortest_path_theta = self.shortest_check.isChecked()
+        self.job.optimize_path_order = self.optimize_order_check.isChecked()
 
         self.transform.scale = self.scale_spin.value()
         self.transform.rotate_deg = self.rot_spin.value()
@@ -280,7 +283,7 @@ class MainWindow(QMainWindow):
                 self.machine,
                 self.job,
             )
-            gcode = export_gcode(self.processed.polar_paths, self.job)
+            gcode = export_gcode(self.processed.polar_paths, self.job, [p.points for p in self.processed.xy_paths])
             self.gcode_preview.setPlainText(gcode[:20000])
             est_time_min = self.processed.total_length_mm / max(self.job.feedrate_mm_min, 1e-6)
             self.info_label.setText(
@@ -364,7 +367,7 @@ class MainWindow(QMainWindow):
         if not out_path:
             return
 
-        gcode = export_gcode(self.processed.polar_paths, self.job)
+        gcode = export_gcode(self.processed.polar_paths, self.job, [p.points for p in self.processed.xy_paths])
         Path(out_path).write_text(gcode, encoding="utf-8")
         QMessageBox.information(self, "Saved", f"G-code saved to {out_path}")
 

@@ -13,7 +13,6 @@ from polar_laser.pipeline import process_paths
 
 def test_wrap_shortest_path_prevents_large_jump() -> None:
     """Ensure theta unwrap avoids ~360 degree jumps across wrap border."""
-    # Points near +179 and -179 deg at same radius.
     r = 10.0
     p1 = (r * math.cos(math.radians(179)), r * math.sin(math.radians(179)))
     p2 = (r * math.cos(math.radians(-179)), r * math.sin(math.radians(-179)))
@@ -62,3 +61,23 @@ def test_default_gcode_export_is_valid() -> None:
     assert "G21" in gcode
     assert "G90" in gcode
     assert "G1 X12 Y20" in gcode
+
+
+def test_optimize_path_order_changes_sequence() -> None:
+    """Nearest-start sorting should place closer next path earlier."""
+    paths = [
+        PolylinePath([(0, 0), (1, 0)]),
+        PolylinePath([(100, 0), (101, 0)]),
+        PolylinePath([(2, 0), (3, 0)]),
+    ]
+    out = process_paths(paths, ImportTransform(), 0, 0, MachineProfile(r_max_mm=1000), JobSettings(max_segment_len_mm=100))
+    starts = [p.points[0] for p in out.xy_paths]
+    assert starts[1] == (2, 0)
+
+
+def test_travel_threshold_uses_xy_metric_when_provided() -> None:
+    """Travel split should rely on XY mm threshold when XY paths are available."""
+    polar = [[(10, 0), (10.1, 100)]]
+    xy = [[(0, 0), (0.1, 0)]]
+    gcode = export_gcode(polar, JobSettings(travel_threshold_mm=1), xy_paths=xy)
+    assert "G0 X10.1 Y100" not in gcode

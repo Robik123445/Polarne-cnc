@@ -51,6 +51,7 @@ class JobSettings:
     theta_wrap_mode: ThetaWrapMode = "neg180_180"
     shortest_path_theta: bool = True
     park_at_zero: bool = False
+    optimize_path_order: bool = True
 
     def laser_power_s(self) -> int:
         """Map percentage power to machine S range."""
